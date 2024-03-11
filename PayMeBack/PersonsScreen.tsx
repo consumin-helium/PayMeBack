@@ -30,8 +30,9 @@ import {
 import BottomNavigationBar from 'react-native-paper/lib/typescript/components/BottomNavigation/BottomNavigationBar.js';
 
 import uuid from 'react-native-uuid';
+import { useIsFocused } from '@react-navigation/native';
 
-function HomeScreen() {
+function PersonScreen() {
 
     type Transaction = {
         person: string;
@@ -68,7 +69,7 @@ function HomeScreen() {
     const [transactionID, setID] = useState('');
     const [selectedContactID, setSelectedContactID] = useState('');
 
-
+const isFocused = useIsFocused();
 
 
 
@@ -92,16 +93,6 @@ function HomeScreen() {
 
 
 
-    const clearAll = async () => {
-        try {
-            await AsyncStorage.clear()
-        } catch (e) {
-            // clear error
-            console.log(e);
-        }
-
-        console.log('Done.')
-    }
 
 
     useEffect(() => {
@@ -124,10 +115,7 @@ function HomeScreen() {
     }
 
 
-    useEffect(() => {
-        console.log("New transactions: ", transactions);
-        storeData();
-      }, [transactions]);
+   
 
 // Here we will use ediperson above to then also change name in all transactions
 const updateTransactionsName = async (newName) => {
@@ -157,16 +145,19 @@ const updateTransactionsName = async (newName) => {
             var dummy_transaction = { "name": name, "id": id, "amount": "R0" }
             console.log("ADDING")
             console.log(dummy_transaction);
-            const value = await AsyncStorage.getItem('@storage_Key')
+            const value = await AsyncStorage.getItem('@PayMeBackStorage')
             if (value !== null) {
                 var all_data = JSON.parse(value);
                 all_data.contacts.push(dummy_transaction);
                 setContacts(all_data.contacts);
-                await AsyncStorage.setItem('@storage_Key', JSON.stringify(all_data));
+                await AsyncStorage.setItem('@PayMeBackStorage', JSON.stringify(all_data));
                 console.debug('Contact added');
 
-            }
 
+            }
+            setPerson('');
+
+            
         } catch (e) {
             console.error(e);
         }
@@ -178,7 +169,7 @@ const updateTransactionsName = async (newName) => {
     const removePerson = async () => {
         try {
             const name = person;
-            const value = await AsyncStorage.getItem('@storage_Key')
+            const value = await AsyncStorage.getItem('@PayMeBackStorage')
             if (value !== null) {
                 var all_data = JSON.parse(value);
 
@@ -193,7 +184,7 @@ const updateTransactionsName = async (newName) => {
                 setTransactions(all_data.transactions);
 
                 // Save the updated all_data object back to AsyncStorage
-                await AsyncStorage.setItem('@storage_Key', JSON.stringify(all_data));
+                await AsyncStorage.setItem('@PayMeBackStorage', JSON.stringify(all_data));
                 console.debug('Transaction removed');
 
             }
@@ -206,7 +197,7 @@ const updateTransactionsName = async (newName) => {
     const storeData = async () => {
         try {
             var value = JSON.stringify({ "transactions": transactions, "contacts": contacts });
-            await AsyncStorage.setItem('@storage_Key', value)
+            await AsyncStorage.setItem('@PayMeBackStorage', value)
             console.debug("saved Data")
         } catch (e) {
             // saving error
@@ -256,9 +247,11 @@ const updateTransactionsName = async (newName) => {
 
 
 
+
+
     const getData = async () => {
         try {
-            const value = await AsyncStorage.getItem('@storage_Key')
+            const value = await AsyncStorage.getItem('@PayMeBackStorage')
             if (value !== null) {
                 var all_data = JSON.parse(value);
                 console.log("here is all data ", all_data)
@@ -273,9 +266,9 @@ const updateTransactionsName = async (newName) => {
                 const sample_data = { "transactions": [{ "amount": "R200", "date": "123", "id": "#123", "person": "Derick", "type": "credit" }], "contacts": [{ "name": "Derick", "amount": "R200", "id": "#8923912" }] }
 
 
-
-                await storeData(JSON.stringify(sample_data));
                 setTransactions(sample_data['transactions']);
+                await storeData();
+                
 
 
             }
@@ -291,13 +284,20 @@ const updateTransactionsName = async (newName) => {
 
     // fetch data, on load and if nothing add dummy data
     useEffect(() => {
+        if(isFocused){
+            console.debug("Focused Persons");
         setLoading(true);
         (async () => {
             await getData();
             setLoading(false); // set loading to false after data has been loaded
         })();
-    }, []);
+    } else{
+        console.debug("Unfocused Persons");
+    }
+    }, [isFocused]);
 
+
+    
 
 
 
@@ -309,6 +309,7 @@ const updateTransactionsName = async (newName) => {
 
 
     return (
+        
         <SafeAreaProvider>
             <SafeAreaView style={backgroundStyle}>
                 <StatusBar
@@ -320,7 +321,7 @@ const updateTransactionsName = async (newName) => {
                     style={backgroundStyle}>
                     <Appbar.Header >
                         <Appbar.Content title="PayMeBack" titleStyle={{ color: colors.main_color }} />
-                        <Appbar.Action icon="refresh" onPress={getData} />
+                       
                     </Appbar.Header>
                     <Searchbar
                         placeholder="Search"
@@ -380,7 +381,7 @@ const updateTransactionsName = async (newName) => {
                     setModalVisible(!modalVisible);
                 }}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' , margin:"10"}}>
                     <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
                         <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Add Transaction</Text>
                         <Text style={{ color: colors.text, fontSize: 20 }}>Fill in the details below to add a new transaction</Text>
@@ -403,7 +404,7 @@ const updateTransactionsName = async (newName) => {
                                 CANCEL
                             </Button>
                             <Button textColor={colors.main_color} onPress={() => {
-                                if (person !== '' || amount !== 'R') {
+                                if (person !== '' && person !== null) {
                                     setModalVisible(false);
                                     addPerson(person);
                                 } else {
@@ -530,4 +531,4 @@ const updateTransactionsName = async (newName) => {
     );
 }
 
-export default HomeScreen;
+export default PersonScreen;

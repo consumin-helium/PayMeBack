@@ -1,101 +1,66 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import { BottomNavigation } from 'react-native-paper';
-
-import HomeScreen from './HomeScreen.tsx';
-import SettingsScreen from './SettingsScreen.tsx';
-import PersonsScreen from './PersonsScreen.tsx';
-import colors from './colors.js';
-import React, { useEffect, useState } from 'react';
-import type { PropsWithChildren } from 'react';
-import {
-  Alert,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  Settings,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
+import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView, StatusBar, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { BottomNavigation } from 'react-native-paper';
+import HomeScreen from './HomeScreen';
+import PersonsScreen from './PersonsScreen';
+import AboutScreen from './AboutScreen';
+import colors from './colors';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
+
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+const Tab = createBottomTabNavigator(); // Create the Tab object here
 
 const HomeRoute = () => <HomeScreen />;
-
 const PersonsRoute = () => <PersonsScreen />;
 
-
-function App(): React.JSX.Element {
-
-  const [index, setIndex] = React.useState(0);
-  const [routes] = React.useState([
-    { key: 'home', title: 'Home', icon: () => null },
-    { key: 'person', title: 'Contacts', icon: () => null },
-  ]);
-  
-
-  const renderScene = BottomNavigation.SceneMap({
-    home: HomeRoute,
-    person: PersonsRoute,
-  });
-
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <StatusBar barStyle="dark-content" />
-        
-        <BottomNavigation
-      navigationState={{ index, routes }}
-      onIndexChange={setIndex}
-      renderScene={renderScene}
-      style={{ backgroundColor: colors.dark_shade }}
-    />
-      </SafeAreaView>
-    </SafeAreaProvider>
-    
-  );
-  
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+const renderScene = BottomNavigation.SceneMap({
+  home: HomeRoute,
+  person: PersonsRoute,
+  about: AboutScreen,
 });
+
+function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator>
+        <Tab.Screen 
+          name="Home" 
+          component={HomeScreen} 
+          options={{ 
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <FontAwesome name="home" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen 
+          name="Contacts" 
+          component={PersonsScreen} 
+          options={{ 
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <FontAwesome name="users" size={size} color={color} />
+            ),
+          }}
+        />
+         <Tab.Screen 
+          name="About" 
+          component={AboutScreen} 
+          options={{ 
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <FontAwesome name="info" size={size} color={color} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
 
 export default App;
