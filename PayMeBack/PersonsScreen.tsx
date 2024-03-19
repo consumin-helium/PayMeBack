@@ -1,9 +1,11 @@
 
-import { View, Text } from 'react-native';
+import { View, Text, TouchableWithoutFeedback } from 'react-native';
 import colors from './colors.js';
 import { Card, Title, Paragraph, Appbar, BottomNavigation, Button, List, IconButton, FAB, ActivityIndicator, RadioButton, ToggleButton, Switch, Searchbar } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { BlurView } from '@react-native-community/blur';
 
 
 import { Picker } from '@react-native-picker/picker';
@@ -32,6 +34,7 @@ import BottomNavigationBar from 'react-native-paper/lib/typescript/components/Bo
 import uuid from 'react-native-uuid';
 import { useIsFocused } from '@react-navigation/native';
 
+
 function PersonScreen() {
 
     type Transaction = {
@@ -41,13 +44,15 @@ function PersonScreen() {
         type: string;
         date: string;
         contactID: string;
-      };
+    };
 
-      type Contact = {
+    type Contact = {
         name: string;
         amount: string;
         id: string;
-      }
+    }
+
+    
 
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -61,15 +66,17 @@ function PersonScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [loading, setLoading] = useState(true);
-    
+
     const [amount, setAmount] = useState('');
     const [person, setPerson] = useState('');
+    const [Currency, setCurrency] = useState<string | null>(null);
+
     const [newName, setNewName] = useState('');
     const [isCredit, setIsCredit] = useState(true);
     const [transactionID, setID] = useState('');
     const [selectedContactID, setSelectedContactID] = useState('');
 
-const isFocused = useIsFocused();
+    const isFocused = useIsFocused();
 
 
 
@@ -89,6 +96,11 @@ const isFocused = useIsFocused();
         greenBackground: {
             backgroundColor: colors.main_color,
         },
+        blurView: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
     });
 
 
@@ -99,6 +111,11 @@ const isFocused = useIsFocused();
         console.log("New contacts: ", contacts);
         updateTransactionsName(newName);
     }, [contacts]);
+
+    useEffect(() => {
+        console.log("New transactions: ", transactions);
+        storeData();
+    }, [transactions]);
 
     const editPerson = async () => {
 
@@ -115,19 +132,19 @@ const isFocused = useIsFocused();
     }
 
 
-   
 
-// Here we will use ediperson above to then also change name in all transactions
-const updateTransactionsName = async (newName) => {
-    const updatedTransactions = transactions.map((transaction) => {
-        if (transaction.contactID === selectedContactID) {
-            return { ...transaction, person: newName };
-        }
-        return transaction;
-    });
-    setTransactions(updatedTransactions);
-    
-}
+
+    // Here we will use ediperson above to then also change name in all transactions
+    const updateTransactionsName = async (newName) => {
+        const updatedTransactions = transactions.map((transaction) => {
+            if (transaction.contactID === selectedContactID) {
+                return { ...transaction, person: newName };
+            }
+            return transaction;
+        });
+        setTransactions(updatedTransactions);
+
+    }
 
     const addPerson = async (name) => {
         try {
@@ -157,7 +174,7 @@ const updateTransactionsName = async (newName) => {
             }
             setPerson('');
 
-            
+
         } catch (e) {
             console.error(e);
         }
@@ -205,7 +222,7 @@ const updateTransactionsName = async (newName) => {
         }
     }
 
-    
+
 
 
 
@@ -246,11 +263,27 @@ const updateTransactionsName = async (newName) => {
     }
 
 
-
+    const getCurrency = async () => {
+        try {
+          const storedCurrency = await AsyncStorage.getItem('currency');
+          if (storedCurrency !== null) {
+            console.log(storedCurrency + " GOT");
+            setCurrency(storedCurrency);
+          } else {
+            // value not found in storage, store sample_transactions
+            await AsyncStorage.setItem('currency', "R");
+            setCurrency("R");
+          }
+        } catch (e) {
+          // error reading value
+          console.log(e);
+        }
+      };
 
 
     const getData = async () => {
         try {
+            getCurrency();
             const value = await AsyncStorage.getItem('@PayMeBackStorage')
             if (value !== null) {
                 var all_data = JSON.parse(value);
@@ -268,7 +301,7 @@ const updateTransactionsName = async (newName) => {
 
                 setTransactions(sample_data['transactions']);
                 await storeData();
-                
+
 
 
             }
@@ -282,34 +315,34 @@ const updateTransactionsName = async (newName) => {
         }
     }
 
+   
+
     // fetch data, on load and if nothing add dummy data
     useEffect(() => {
-        if(isFocused){
+        if (isFocused) {
             console.debug("Focused Persons");
-        setLoading(true);
-        (async () => {
-            await getData();
-            setLoading(false); // set loading to false after data has been loaded
-        })();
-    } else{
-        console.debug("Unfocused Persons");
-    }
+            setLoading(true);
+            (async () => {
+                await getData();
+                setLoading(false); // set loading to false after data has been loaded
+            })();
+        } else {
+            console.debug("Unfocused Persons");
+        }
     }, [isFocused]);
 
 
-    
 
 
 
-    if (loading) {
-        return <ActivityIndicator />; // or some other loading indicator
-    }
+
+
 
 
 
 
     return (
-        
+
         <SafeAreaProvider>
             <SafeAreaView style={backgroundStyle}>
                 <StatusBar
@@ -321,7 +354,7 @@ const updateTransactionsName = async (newName) => {
                     style={backgroundStyle}>
                     <Appbar.Header >
                         <Appbar.Content title="PayMeBack" titleStyle={{ color: colors.main_color }} />
-                       
+
                     </Appbar.Header>
                     <Searchbar
                         placeholder="Search"
@@ -334,12 +367,14 @@ const updateTransactionsName = async (newName) => {
                     </View>
 
 
-                    {contacts.filter(contact => contact.name.toLowerCase().includes(searchQuery.toLowerCase())).map((contact) => (
+                    {loading ? (
+                        <ActivityIndicator /> // or some other loading indicator
+                    ) : (contacts.filter(contact => contact.name.toLowerCase().includes(searchQuery.toLowerCase())).map((contact) => (
                         <List.Item
                             key={contact.id}
                             title={contact.name}
-                            description={Number(contact.amount) < 0 ? `-R${Math.abs(Number(contact.amount))}` : `R${contact.amount}`}
-                            style={{ backgroundColor: colors.dark_shade, margin:5 }}
+                            description={Number(contact.amount) < 0 ? `-${Currency}${Math.abs(Number(contact.amount))}` : `${Currency}${contact.amount}`}
+                            style={{ backgroundColor: colors.dark_shade, margin: 5 }}
                             titleStyle={{ color: colors.text }}
                             descriptionStyle={{ color: colors.text }}
                             right={props => (
@@ -349,7 +384,7 @@ const updateTransactionsName = async (newName) => {
                                 </View>
                             )}
                         />
-                    ))}
+                    )))}
 
 
 
@@ -372,8 +407,8 @@ const updateTransactionsName = async (newName) => {
                 onPress={() => setModalVisible(true)}
             />
 
-{/* below is modal to add new persosn */}
-<Modal
+            {/* below is modal to add new persosn */}
+            <Modal
                 animationType="slide"
                 transparent={true}
                 visible={modalVisible}
@@ -381,23 +416,27 @@ const updateTransactionsName = async (newName) => {
                     setModalVisible(!modalVisible);
                 }}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' , margin:"10"}}>
+
+<BlurView style={styles.blurView} blurType="light" blurAmount={10}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+     
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', margin: "10" }}>
                     <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
-                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Add Transaction</Text>
-                        <Text style={{ color: colors.text, fontSize: 20 }}>Fill in the details below to add a new transaction</Text>
-                        <View style={{height:10}}></View>
-                        <Text style={{color:colors.text}}>Set Name</Text>
-                        <View style={{height:10}}></View>
+                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Add Contact</Text>
+                        <Text style={{ color: colors.text, fontSize: 20 }}>Fill in the details below to add a new Contact</Text>
+                        <View style={{ height: 10 }}></View>
+                        <Text style={{ color: colors.text }}>Set Name</Text>
+                        <View style={{ height: 10 }}></View>
                         <TextInput
                             placeholder="name...."
                             id='person'
                             value={person}
                             onChangeText={setPerson}
                             placeholderTextColor={colors.text}
-                            style={{ color: colors.text, fontStyle: 'italic', backgroundColor:colors.dark_accent, borderRadius: 5 }}
+                            style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
 
                         />
-                        <View style={{height:10}}></View>
+                        <View style={{ height: 10 }}></View>
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             <Button textColor={colors.main_color} onPress={() => { setModalVisible(false); setPerson(''); setAmount(''); }}>
@@ -423,6 +462,10 @@ const updateTransactionsName = async (newName) => {
                         </View>
                     </View>
                 </View>
+            
+        </TouchableWithoutFeedback>
+    </BlurView>
+                
             </Modal>
 
             {/* Below is the modal for the edit contacts popup */}
@@ -434,39 +477,43 @@ const updateTransactionsName = async (newName) => {
                     setModalVisible(!editModalVisible);
                 }}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+
+<BlurView style={styles.blurView} blurType="light" blurAmount={10}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+            
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
                         <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Edit Person</Text>
                         <Text style={{ color: colors.text, fontSize: 20 }}>Type below the new name you'd like for this contact. All transactions will update</Text>
-                        
-                        <View style={{height:20}}></View>
 
-<Text style={{color:colors.text}}>Old Name</Text>
-<View style={{height:10}}></View>
+                        <View style={{ height: 20 }}></View>
+
+                        <Text style={{ color: colors.text }}>Old Name</Text>
+                        <View style={{ height: 10 }}></View>
                         <Picker
-                id='person'
-                selectedValue={person}
-                onValueChange={(itemValue, itemIndex) => setPerson(itemValue)}
-                style={{ color: colors.text, fontStyle: 'italic',backgroundColor: colors.dark_accent, borderRadius: 5 }}
-              >
-                {contacts.map((contact) => (
-                  <Picker.Item key={contact.name} label={contact.name} value={contact.name} />
-                ))}
-              </Picker>
-              <View style={{height:20}}></View>
+                            id='person'
+                            selectedValue={person}
+                            onValueChange={(itemValue, itemIndex) => setPerson(itemValue)}
+                            style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
+                        >
+                            {contacts.map((contact) => (
+                                <Picker.Item key={contact.name} label={contact.name} value={contact.name} />
+                            ))}
+                        </Picker>
+                        <View style={{ height: 20 }}></View>
 
-<Text style={{color:colors.text}}>New Name</Text>
-<View style={{height:10}}></View>
+                        <Text style={{ color: colors.text }}>New Name</Text>
+                        <View style={{ height: 10 }}></View>
                         <TextInput
                             placeholder="NEW NAME"
                             id='person'
                             value={newName}
                             onChangeText={setNewName}
                             placeholderTextColor={colors.text}
-                            style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5}}
+                            style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
 
                         />
-                        <View style={{height:10}}></View>
+                        <View style={{ height: 10 }}></View>
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                             <Button textColor={colors.main_color} onPress={() => { setEditModalVisible(false); setPerson(''); setAmount(''); }}>
@@ -492,10 +539,12 @@ const updateTransactionsName = async (newName) => {
                         </View>
                     </View>
                 </View>
+        </TouchableWithoutFeedback>
+    </BlurView>
             </Modal>
 
 
-{/* Below is for the mark as paid modal */}
+            {/* Below is for the mark as paid modal */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -503,8 +552,10 @@ const updateTransactionsName = async (newName) => {
                 onRequestClose={() => {
                     setPaidModalVisible(!paidModal);
                 }}
-            >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            ><BlurView style={styles.blurView} blurType="light" blurAmount={10}>
+            <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+                
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', margin: 10 }}>
                     <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
                         <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Mark contact as paid off?</Text>
                         <Text style={{ color: colors.text, fontSize: 20 }}>This will remove the person and all their transactions. Are you sure you'd like to mark this as paid off?</Text>
@@ -523,6 +574,8 @@ const updateTransactionsName = async (newName) => {
                         </View>
                     </View>
                 </View>
+            </TouchableWithoutFeedback>
+        </BlurView>
             </Modal>
 
 

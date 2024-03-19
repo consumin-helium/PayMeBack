@@ -1,5 +1,5 @@
 
-import { View, Text } from 'react-native';
+import { View, Text, TouchableWithoutFeedback } from 'react-native';
 import colors from './colors.js';
 import { Card, Title, Paragraph, Appbar, BottomNavigation, Button, List, IconButton, FAB, ActivityIndicator, RadioButton, ToggleButton, Switch, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 
 import uuid from 'react-native-uuid';
+import { BlurView } from '@react-native-community/blur';
 
 
 
@@ -58,10 +59,12 @@ function HomeScreen() {
     id: string;
   }
 
+  const [Currency, setCurrency] = useState<string | null>(null);
+
+
   const navigation = useNavigation();
 
-  
-const [filter, setFilter] = useState('All');
+  const [filter, setFilter] = useState('All');
 
   const [contacts, setContacts] = useState<Contact[]>([]);
 
@@ -104,6 +107,12 @@ const [filter, setFilter] = useState('All');
     },
     greenBackground: {
       backgroundColor: colors.main_color,
+    },
+    blurView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+
     },
   });
 
@@ -245,6 +254,7 @@ const [filter, setFilter] = useState('All');
 
   const getData = async () => {
     try {
+      getCurrency();
       const value = await AsyncStorage.getItem('@PayMeBackStorage')
       if (value !== null) {
         var all_data = JSON.parse(value);
@@ -254,7 +264,7 @@ const [filter, setFilter] = useState('All');
 
       } else {
         // value not found in storage, store sample_transactions
-        var sample_data = { "transactions": [{ "amount": "200", "currency": "R", "notes": "test", "date": "123", "id": "#123", "person": "Derick", "type": "credit" }], "contacts": [{ "name": "Derick", "amount": "0", "id": "#8923912" }] }
+        var sample_data = { "transactions": [{ "amount": "200", "currency": "R", "notes": "Notes Go Here...", "date": "03/11/2024", "id": "#123456", "person": "Sample Name", "type": "credit", "contactID": "#123" }], "contacts": [{ "name": "Sample Name", "amount": "200", "id": "#123" }] }
 
 
 
@@ -267,18 +277,42 @@ const [filter, setFilter] = useState('All');
     } catch (e) {
       // error reading value
       setLoading(false); // set loading to false even if there was an error
-      console.log(e);
+      console.log(e); 
     }
   }
 
 
 
 
+  const getCurrency = async () => {
+    try {
+      const storedCurrency = await AsyncStorage.getItem('currency');
+      if (storedCurrency !== null) {
+        console.log(storedCurrency + " GOT");
+        setCurrency(storedCurrency);
+      } else {
+        // value not found in storage, store sample_transactions
+        await AsyncStorage.setItem('currency', "R");
+        setCurrency("R");
+      }
+    } catch (e) {
+      // error reading value
+      console.log(e);
+    }
+  };
+
+
   useEffect(() => {
     if (isFocused) {
+      setLoading(true);
       // Do something when the screen is focused
       console.log('Focused Home');
-      getData();
+
+      (async () => {
+        await getData();
+        setLoading(false); // set loading to false after data has been loaded
+      })();
+
     } else {
       // Do something when the screen is unfocused
       console.log('Unfocused Home');
@@ -286,13 +320,8 @@ const [filter, setFilter] = useState('All');
   }, [isFocused]);
 
 
-  if (loading) {
-    return <ActivityIndicator />; // or some other loading indicator
-  }
 
-  if (!Array.isArray(transactions)) {
-    return <ActivityIndicator />;
-  }
+
 
 
 
@@ -318,48 +347,49 @@ const [filter, setFilter] = useState('All');
               <Title style={{ fontWeight: 'bold' }}>Here is your total balance:</Title>
 
               <View style={[styles.block, styles.greenBackground]}>
-                <Paragraph style={{ color: colors.text, fontWeight: 'bold', fontSize: 20 }}>{totalBal < 0 ? `-R${Math.abs(totalBal)}` : `R${totalBal}`}</Paragraph>
+                <Paragraph style={{ color: colors.text, fontWeight: 'bold', fontSize: 20 }}>{totalBal < 0 ? `-${Currency}${Math.abs(totalBal)}` : `${Currency}${totalBal}`}</Paragraph>
               </View>
             </Card.Content>
           </Card>
-          
+
           <View style={styles.block}>
             <Title style={{ fontWeight: 'bold' }}>Recent Transactions</Title>
           </View>
-          
+
           <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
-          <ToggleButton.Row onValueChange={value => setFilter(value)} value={filter}>
-  <ToggleButton icon="cash" value="All" />
-  <ToggleButton icon="cash-plus" value="credit" />
-  <ToggleButton icon="cash-minus" value="debit" />
-</ToggleButton.Row>
-</View>
-<View style={{ height: 10 }}></View>
+            <ToggleButton.Row onValueChange={value => setFilter(value)} value={filter}>
+              <ToggleButton icon="cash" value="All" />
+              <ToggleButton icon="cash-plus" value="credit" />
+              <ToggleButton icon="cash-minus" value="debit" />
+            </ToggleButton.Row>
+          </View>
+          <View style={{ height: 10 }}></View>
+          {loading ? (
+            <ActivityIndicator /> // or some other loading indicator
+          ) : (transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+            .filter(transaction => filter === 'All' || transaction.type.toLowerCase() === filter.toLowerCase()).map((transaction) => (
+              <List.Item
+                key={transaction.id}
+                title={transaction.person + ' - ' + transaction.type}
+                description={Currency + transaction.amount + ' - ' + new Date(transaction.date).toLocaleDateString() + '\n' + transaction.notes}
+                style={{ backgroundColor: colors.dark_shade, margin: 5 }}
+                titleStyle={{ color: colors.text }}
+                descriptionStyle={{ color: colors.text }}
+                right={props => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
 
-          {transactions.sort((a, b) => new Date(b.date) - new Date(a.date))
-    .filter(transaction => filter === 'All' || transaction.type.toLowerCase() === filter.toLowerCase()).map((transaction) => (
-            <List.Item
-              key={transaction.id}
-              title={transaction.person + ' - ' + transaction.type}
-              description={"R" + transaction.amount + ' - ' + new Date(transaction.date).toLocaleDateString() + '\n' + transaction.notes}
-              style={{ backgroundColor: colors.dark_shade, margin: 5 }}
-              titleStyle={{ color: colors.text }}
-              descriptionStyle={{ color: colors.text }}
-              right={props => (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                 
-                  <IconButton icon="check" size={20} onPress={() => { setPaidModalVisible(true); setID(transaction.id); console.log(transactionID) }} />
-                </View>
-              )}
-              left={props => (<View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+                    <IconButton icon="check" size={20} onPress={() => { setPaidModalVisible(true); setID(transaction.id); console.log(transactionID) }} />
+                  </View>
+                )}
+                left={props => (<View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
 
-                {transaction.type === 'credit' && <FontAwesome name="arrow-up" size={20} color="green" />}
-                {transaction.type === 'debit' && <FontAwesome name="arrow-down" size={20} color="red" />}
-              </View>)
+                  {transaction.type === 'credit' && <FontAwesome name="arrow-up" size={20} color="green" />}
+                  {transaction.type === 'debit' && <FontAwesome name="arrow-down" size={20} color="red" />}
+                </View>)
 
-              }
-            />
-          ))}
+                }
+              />
+            )))}
 
 
 
@@ -396,83 +426,88 @@ const [filter, setFilter] = useState('All');
           setModalVisible(!modalVisible);
         }}
       >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
-          <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Add Transaction</Text>
-            <Text style={{ color: colors.text, fontSize: 20 }}>Fill in the details below to add a new transaction</Text>
-            <View style={{ height: 20 }}></View>
+        <BlurView style={styles.blurView} blurType="light" blurAmount={10}>
+          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
 
-            <Text style={{ color: colors.text }}>Old Name</Text>
-            <View style={{ height: 10 }}></View>
-            <Picker
-              id='person'
-              selectedValue={person}
-              onValueChange={(itemValue, itemIndex) => { { setPerson(itemValue); console.log(itemValue) } }}
-              style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
-            >
-              {contacts.map((contact) => (
-                <Picker.Item key={contact.name} label={contact.name} value={contact.name} />
-              ))}
-            </Picker>
-            <View style={{ height: 20 }} />
-            <Text style={{ color: colors.text }}>Amount owed</Text>
-            <View style={{ height: 10 }} />
-            <TextInput
-              placeholder="MONEY HERE"
-              id='amount'
-              value={amount}
-              keyboardType='numeric'
-              onChangeText={(text) => setAmount('R' + text.replace(/[^0-9]/g, ''))}
-              placeholderTextColor={colors.text}
-              style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%', margin: 10 }}>
+              <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
+                <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Add Transaction</Text>
+                <Text style={{ color: colors.text, fontSize: 20 }}>Fill in the details below to add a new transaction</Text>
+                <View style={{ height: 20 }}></View>
 
-            />
-            {/* here is descriptio text area */}
-            <View style={{ height: 20 }} />
-            <Text style={{ color: colors.text }}>Additional Info</Text>
-            <View style={{ height: 10 }} />
-            <TextInput
-              placeholder="Extra Note Here..."
-              id='description'
-              value={description}
-              onChangeText={setDescription}
-              placeholderTextColor={colors.text}
-              style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
+                <Text style={{ color: colors.text }}>Old Name</Text>
+                <View style={{ height: 10 }}></View>
+                <Picker
+                  id='person'
+                  selectedValue={person}
+                  onValueChange={(itemValue, itemIndex) => { { setPerson(itemValue); console.log(itemValue) } }}
+                  style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
+                >
+                  {contacts.map((contact) => (
+                    <Picker.Item key={contact.name} label={contact.name} value={contact.name} />
+                  ))}
+                </Picker>
+                <View style={{ height: 20 }} />
+                <Text style={{ color: colors.text }}>Amount owed</Text>
+                <View style={{ height: 10 }} />
+                <TextInput
+                  placeholder="MONEY HERE"
+                  id='amount'
+                  value={amount}
+                  keyboardType='numeric'
+                  onChangeText={(text) => setAmount(Currency + text.replace(/[^0-9]/g, ''))}
+                  placeholderTextColor={colors.text}
+                  style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
 
-            />
-            <View style={{ height: 20 }} />
-            <View>
-              
-              <RadioButton.Group onValueChange={newValue => setIsCredit(newValue)} value={isCredit}>
-  <RadioButton.Item label="Credit - They Owe me" value={true} color={colors.main_color} labelStyle={{color: colors.text}}/>
-  <RadioButton.Item label="Debit - I Owe them" value={false} color={colors.main_color} labelStyle={{color: colors.text}}/>
-</RadioButton.Group>
+                />
+                {/* here is descriptio text area */}
+                <View style={{ height: 20 }} />
+                <Text style={{ color: colors.text }}>Additional Info</Text>
+                <View style={{ height: 10 }} />
+                <TextInput
+                  placeholder="Extra Note Here..."
+                  id='description'
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholderTextColor={colors.text}
+                  style={{ color: colors.text, fontStyle: 'italic', backgroundColor: colors.dark_accent, borderRadius: 5 }}
+
+                />
+                <View style={{ height: 20 }} />
+                <View>
+
+                  <RadioButton.Group onValueChange={newValue => setIsCredit(newValue)} value={isCredit}>
+                    <RadioButton.Item label="Credit - They Owe me" value={true} color={colors.main_color} labelStyle={{ color: colors.text }} />
+                    <RadioButton.Item label="Debit - I Owe them" value={false} color={colors.main_color} labelStyle={{ color: colors.text }} />
+                  </RadioButton.Group>
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Button textColor={colors.main_color} onPress={() => { setModalVisible(false); setPerson(''); setAmount(''); }}>
+                    CANCEL
+                  </Button>
+                  <Button textColor={colors.main_color} onPress={() => {
+                    if (amount !== '') {
+                      setModalVisible(false);
+                      addTransaction(person, amount, isCredit);
+                    } else {
+                      Alert.alert(
+                        "Fields Required",
+                        "Please fill in all fields",
+                        [
+                          { text: "OK", onPress: () => console.log("OK Pressed") }
+                        ],
+                        { cancelable: false }
+                      );
+                    }
+                  }}>
+                    OK
+                  </Button>
+                </View>
+              </View>
             </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Button textColor={colors.main_color} onPress={() => { setModalVisible(false); setPerson(''); setAmount(''); }}>
-                CANCEL
-              </Button>
-              <Button textColor={colors.main_color} onPress={() => {
-                if (amount !== '') {
-                  setModalVisible(false);
-                  addTransaction(person, amount, isCredit);
-                } else {
-                  Alert.alert(
-                    "Fields Required",
-                    "Please fill in all fields",
-                    [
-                      { text: "OK", onPress: () => console.log("OK Pressed") }
-                    ],
-                    { cancelable: false }
-                  );
-                }
-              }}>
-                OK
-              </Button>
-            </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </BlurView>
       </Modal>
 
 
@@ -484,25 +519,30 @@ const [filter, setFilter] = useState('All');
           setPaidModalVisible(!paidModal);
         }}
       >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', margin: "10" }}>
-          <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Mark transaction as paid off?</Text>
-            <Text style={{ color: colors.text, fontSize: 20 }}>This will remove the transaction. Are you sure you'd like to mark this as paid off?</Text>
+        <BlurView style={styles.blurView} blurType="light" blurAmount={10}>
+          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <View style={{ backgroundColor: colors.dark_shade, padding: 20, borderRadius: 10 }}>
+                <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Mark transaction as paid off?</Text>
+                <Text style={{ color: colors.text, fontSize: 20 }}>This will remove the transaction. Are you sure you'd like to mark this as paid off?</Text>
 
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Button textColor={colors.main_color} onPress={() => { setPaidModalVisible(false); setPerson(''); setAmount(''); }}>
-                CANCEL
-              </Button>
-              <Button textColor={colors.main_color} onPress={() => {
-                setPaidModalVisible(false);
-                removeTransaction()
-              }}>
-                OK
-              </Button>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Button textColor={colors.main_color} onPress={() => { setPaidModalVisible(false); setPerson(''); setAmount(''); }}>
+                    CANCEL
+                  </Button>
+                  <Button textColor={colors.main_color} onPress={() => {
+                    setPaidModalVisible(false);
+                    removeTransaction()
+                  }}>
+                    OK
+                  </Button>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </BlurView>
       </Modal>
 
 

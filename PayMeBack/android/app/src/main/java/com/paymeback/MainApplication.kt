@@ -1,4 +1,6 @@
-package com.paymeback
+package com.ElasticPayMeBack
+
+import com.ElasticPayMeBack.BuildConfig
 
 import android.app.Application
 import com.facebook.react.PackageList
