@@ -124,13 +124,14 @@ function AboutScreen() {
                     </Appbar.Header>
 
                     <View style={{ margin: 10, }}>
+                    
                         <Title style={{ fontWeight: '600' }}>About PayMeBack:</Title>
 
-                        <Text>PayMeBack was created by the amazing team at ElasticElkStudios as a portfolio product. We are a small team of developers who are passionate about creating useful and fun apps. We hope you enjoy using PayMeBack as much as we enjoyed creating it. </Text>
+                        <Text style={{color: colors.dark_accent}}>PayMeBack was created by the amazing team at ElasticElkStudios as a portfolio product. We are a small team of developers who are passionate about creating useful and fun apps. We hope you enjoy using PayMeBack as much as we enjoyed creating it. </Text>
                         <View style={{ height: 10 }}></View>
-                        <Text>If you ever have any suggestions, feel free to let me know on Discord at <Text style={{ fontWeight: 800 }}>@carbonfaceprint</Text></Text>
+                        <Text style={{color: colors.dark_accent}}>If you ever have any suggestions, feel free to let me know on Discord at <Text style={{ fontWeight: 800 }}>@carbonfaceprint</Text></Text>
                         <View style={{ height: 10 }}></View>
-                        <Text>This app will remain completely free and open source forever. Feel free to check out the code at {'\n'}
+                        <Text style={{color: colors.dark_accent}}>This app will remain completely free and open source forever. Feel free to check out the code at {'\n'}
 
                             <Text style={{ color: 'blue' }} onPress={() => Linking.openURL('https://github.com/consumin-helium/PayMeBack')}>
                                 https://github.com/consumin-helium/PayMeBack
@@ -138,7 +139,7 @@ function AboutScreen() {
                         </Text>
 
                         <View style={{ height: 10 }}></View>
-                        <Text>Our website is also available at {'\n'}
+                        <Text style={{color: colors.dark_accent}}>Our website is also available at {'\n'}
                             <Text style={{ color: 'blue' }} onPress={() => Linking.openURL('https://elasticelkstudios.co.za')}>
                                 https://elasticelkstudios.co.za
                             </Text>
@@ -146,7 +147,7 @@ function AboutScreen() {
                         <View style={{ height: 10 }}></View>
 
                         <Title style={{ fontWeight: '600' }}>Privacy Policy:</Title>
-                        <Text>PayMeBack does not collect any personal information. All data is stored locally on your device. We do not have access to any of your data. </Text>
+                        <Text style={{color: colors.dark_accent}}>PayMeBack does not collect any personal information. All data is stored locally on your device. We do not have access to any of your data. </Text>
                         <View style={{ height: 50 }}></View>
                         <Button style={{ backgroundColor: colors.main_color }} onPress={() => {
                             Alert.alert(

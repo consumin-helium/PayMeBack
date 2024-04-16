@@ -80,8 +80,8 @@ android {
         applicationId "com.ElasticPayMeBack"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "2"
+        versionCode 3
+        versionName "3.0"
     }
     signingConfigs {
         debug {
@@ -123,6 +123,8 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    testImplementation 'junit:junit:4.13.2'
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

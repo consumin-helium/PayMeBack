@@ -1,4 +1,4 @@
-package com.paymeback
+package com.ElasticPayMeBack
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
