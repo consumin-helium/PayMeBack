@@ -366,7 +366,6 @@ function HomeScreen() {
               <Title style={{fontWeight: 'bold'}}>
                 Here is your total balance:
               </Title>
-
               <View style={[styles.block, styles.greenBackground]}>
                 <Paragraph
                   style={{
